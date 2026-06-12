@@ -1,0 +1,12 @@
+{
+  "name": "AI Character Study",
+  "short_name": "Study AI",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "description": "AI character interaction based mobile study app MVP",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": []
+}

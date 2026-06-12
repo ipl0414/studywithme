@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# Local env
+.env
+.env.*
+!.env.example
+
+# Generated local assets
+backend/generated/
+frontend/build/
+
+# Local runtime output
+.playwright-cli/
+output/
+*.log
+
+# Prototype, presentation, and planning artifacts
+demo/
+presentations/
+docs/
+
+# Test sources and fixtures excluded from the collaboration repository
+backend/tests/
+frontend/test/
