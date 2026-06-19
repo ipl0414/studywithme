@@ -143,6 +143,51 @@ class InMemoryStore:
         self.current_character_by_user[user_id] = character_id
         return character
 
+    def update_character(
+        self,
+        user_id: str,
+        character_id: str,
+        name: Optional[str] = None,
+        persona_text: Optional[str] = None,
+        appearance_text: Optional[str] = None,
+    ) -> CharacterRecord:
+        character = self.get_character(character_id)
+        if character.user_id != user_id:
+            raise KeyError(character_id)
+        if name is not None:
+            character.name = name
+        if persona_text is not None:
+            character.persona_text = persona_text
+        if appearance_text is not None:
+            character.appearance_text = appearance_text
+        return character
+
+    def delete_character(self, user_id: str, character_id: str) -> CharacterRecord:
+        character = self.get_character(character_id)
+        if character.user_id != user_id:
+            raise KeyError(character_id)
+        # Remove related costumes and chat history for this character.
+        for costume_id in [
+            costume.id
+            for costume in self.costumes.values()
+            if costume.character_id == character_id
+        ]:
+            self.costumes.pop(costume_id, None)
+        self.chat_messages = [
+            message
+            for message in self.chat_messages
+            if message.character_id != character_id
+        ]
+        removed = self.characters.pop(character_id)
+        # Repoint the user's current character if it was the deleted one.
+        if self.current_character_by_user.get(user_id) == character_id:
+            remaining = self.list_characters(user_id)
+            if remaining:
+                self.current_character_by_user[user_id] = remaining[0].id
+            else:
+                self.current_character_by_user.pop(user_id, None)
+        return removed
+
     def create_material(
         self,
         user_id: str,

@@ -27,6 +27,12 @@ class CharacterCreateRequest(BaseModel):
     appearance_text: str = Field(..., min_length=1)
 
 
+class CharacterUpdateRequest(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1)
+    persona_text: Optional[str] = Field(default=None, min_length=1)
+    appearance_text: Optional[str] = Field(default=None, min_length=1)
+
+
 class CharacterResponse(BaseModel):
     id: str
     name: str

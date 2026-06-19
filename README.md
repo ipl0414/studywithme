@@ -1,12 +1,13 @@
 # Study With Me
 
 ## 실행 방법
+python3 -m pip install -r requirements.txt
 
 ### 1. 백엔드
 
 ```powershell
 cd backend
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### 2. 프론트엔드

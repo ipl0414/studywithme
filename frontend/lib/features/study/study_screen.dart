@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -56,6 +58,7 @@ class StudyScreen extends StatefulWidget {
     required this.materials,
     required this.selectedMaterialIds,
     required this.quizSession,
+    required this.onClose,
     required this.onMaterialUploaded,
     required this.onMaterialSelectionChanged,
     required this.onMaterialDeleted,
@@ -70,6 +73,7 @@ class StudyScreen extends StatefulWidget {
   final List<MaterialDto> materials;
   final Set<String> selectedMaterialIds;
   final QuizSessionState? quizSession;
+  final VoidCallback onClose;
   final ValueChanged<MaterialDto> onMaterialUploaded;
   final ValueChanged<Set<String>> onMaterialSelectionChanged;
   final ValueChanged<String> onMaterialDeleted;
@@ -96,14 +100,29 @@ class _StudyScreenState extends State<StudyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 퀴즈 세션이 있으면 비주얼노벨 전체화면 퀴즈로 진행한다.
+    final quizSession = widget.quizSession;
+    if (quizSession != null) {
+      return _VisualQuiz(
+        api: widget.api,
+        character: widget.character,
+        quiz: quizSession.quiz,
+        questionIndex: quizSession.questionIndex,
+        selectedChoice: quizSession.selectedChoice,
+        answerAffinityDelta: quizSession.answerAffinityDelta,
+        rewardAlreadyClaimed: quizSession.rewardAlreadyClaimed,
+        onChoiceSelected: _selectChoice,
+        onNext: _nextQuestion,
+        onClose: widget.onClose,
+      );
+    }
+
     final textTheme = Theme.of(context).textTheme;
 
     return ListView(
       controller: _scrollController,
       padding: const EdgeInsets.all(MetaSpacing.xl),
       children: [
-        Text('Study', style: textTheme.headlineMedium),
-        const SizedBox(height: MetaSpacing.xl),
         RoundedSection(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,42 +167,20 @@ class _StudyScreenState extends State<StudyScreen> {
                             ? null
                             : _generateQuiz,
                     icon: const Icon(Icons.quiz_outlined),
-                    label: Text(_generatingQuiz ? '생성 중...' : '퀴즈 생성'),
+                    label: Text(_generatingQuiz ? '생성 중...' : '퀴즈 시작'),
                   ),
                 ],
               ),
             ],
           ),
         ),
-        const SizedBox(height: MetaSpacing.xl),
-        RoundedSection(
-          radius: MetaRadii.xl,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('생성된 퀴즈', style: textTheme.titleLarge),
-              const SizedBox(height: MetaSpacing.md),
-              if (_generatingQuiz)
-                const _GeneratingQuizNotice()
-              else if (widget.quizSession == null)
-                Text('아직 생성된 퀴즈가 없습니다.', style: textTheme.bodyLarge)
-              else
-                _QuizRunner(
-                  api: widget.api,
-                  character: widget.character,
-                  quiz: widget.quizSession!.quiz,
-                  questionIndex: widget.quizSession!.questionIndex,
-                  selectedChoice: widget.quizSession!.selectedChoice,
-                  answerAffinityDelta: widget.quizSession!.answerAffinityDelta,
-                  rewardAlreadyClaimed:
-                      widget.quizSession!.rewardAlreadyClaimed,
-                  onChoiceSelected: _selectChoice,
-                  onExplanationExpanded: _scrollToBottom,
-                  onNext: _nextQuestion,
-                ),
-            ],
+        if (_generatingQuiz) ...[
+          const SizedBox(height: MetaSpacing.xl),
+          RoundedSection(
+            radius: MetaRadii.xl,
+            child: const _GeneratingQuizNotice(),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -352,8 +349,9 @@ class _GeneratingQuizNotice extends StatelessWidget {
   }
 }
 
-class _QuizRunner extends StatelessWidget {
-  const _QuizRunner({
+/// 캐릭터 이미지를 배경으로 한 비주얼노벨 형태의 퀴즈 화면.
+class _VisualQuiz extends StatelessWidget {
+  const _VisualQuiz({
     required this.api,
     required this.character,
     required this.quiz,
@@ -362,8 +360,8 @@ class _QuizRunner extends StatelessWidget {
     required this.answerAffinityDelta,
     required this.rewardAlreadyClaimed,
     required this.onChoiceSelected,
-    required this.onExplanationExpanded,
     required this.onNext,
+    required this.onClose,
   });
 
   final ApiClient api;
@@ -374,118 +372,236 @@ class _QuizRunner extends StatelessWidget {
   final int? answerAffinityDelta;
   final bool rewardAlreadyClaimed;
   final ValueChanged<int> onChoiceSelected;
-  final VoidCallback onExplanationExpanded;
   final VoidCallback onNext;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     final question = quiz.questions[questionIndex];
     final answered = selectedChoice != null;
     final correct = selectedChoice == question.answerIndex;
+    final imageUrl = api.assetUrl(
+      character.baseImageUrl ?? character.visualNovelImageUrl,
+    );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
       children: [
-        Text(
-          '${questionIndex + 1}/${quiz.questions.length}',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: MetaSpacing.xs),
-        _DifficultyChip(difficulty: question.difficulty),
-        const SizedBox(height: MetaSpacing.md),
-        Row(
-          children: [
-            const Icon(Icons.quiz_outlined),
-            const SizedBox(width: MetaSpacing.md),
-            Expanded(
-              child: Text(
-                question.question,
-                style: Theme.of(context).textTheme.bodyLarge,
+        Positioned.fill(
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+            errorBuilder: (_, __, ___) => const ColoredBox(
+              color: MetaColors.inkDeep,
+              child: Center(
+                child: Icon(Icons.person, size: 120, color: MetaColors.canvas),
               ),
             ),
-          ],
+          ),
         ),
-        if (question.choices.isNotEmpty) ...[
-          const SizedBox(height: MetaSpacing.md),
-          ...question.choices.asMap().entries.map(
-                (entry) => _ChoiceButton(
-                  index: entry.key,
-                  label: entry.value,
-                  correctIndex: question.answerIndex,
-                  selectedIndex: selectedChoice,
-                  onTap: () => onChoiceSelected(entry.key),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  MetaColors.inkDeep.withValues(alpha: 0.5),
+                  MetaColors.inkDeep.withValues(alpha: 0.06),
+                  MetaColors.inkDeep.withValues(alpha: 0.82),
+                ],
+                stops: const [0, 0.45, 1],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: MetaSpacing.base,
+          right: MetaSpacing.base,
+          top: MetaSpacing.xs,
+          child: Row(
+            children: [
+              Material(
+                color: MetaColors.inkDeep.withValues(alpha: 0.5),
+                shape: const CircleBorder(
+                  side: BorderSide(color: Color(0x3DFFFFFF)),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: onClose,
+                  child: const SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Icon(Icons.close, color: MetaColors.canvas),
+                  ),
                 ),
               ),
-        ],
-        if (answered) ...[
-          const SizedBox(height: MetaSpacing.md),
-          _TutorReactionBubble(
-            avatarUrl: api.assetUrl(character.baseImageUrl),
-            text: correct ? question.correctReaction : question.wrongReaction,
+              const SizedBox(width: MetaSpacing.md),
+              _VisualBadge(
+                text: '${questionIndex + 1} / ${quiz.questions.length}',
+              ),
+              const SizedBox(width: MetaSpacing.xs),
+              _VisualBadge(text: _difficultyLabel(question.difficulty)),
+            ],
           ),
-          const SizedBox(height: MetaSpacing.md),
-          _AffinityGainBar(
-            scoreAfter: character.affinityScore,
-            delta: answerAffinityDelta,
-          ),
-          const SizedBox(height: MetaSpacing.md),
-          QuizExplanationPanel(
-            explanation: question.explanation,
-            choices: question.choices,
-            explanations: question.choiceExplanations,
-            answerIndex: question.answerIndex,
-            selectedIndex: selectedChoice!,
-            onExpanded: onExplanationExpanded,
-          ),
-          if (rewardAlreadyClaimed) ...[
-            const SizedBox(height: MetaSpacing.md),
-            Text(
-              '이 문제의 호감도 보상은 이미 반영됐습니다.',
-              style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        Positioned(
+          left: MetaSpacing.base,
+          right: MetaSpacing.base,
+          bottom: MetaSpacing.base,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(MetaRadii.xxl),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: MetaColors.canvas.withValues(alpha: 0.9),
+                  border: Border.all(
+                    color: MetaColors.canvas.withValues(alpha: 0.42),
+                  ),
+                  borderRadius: BorderRadius.circular(MetaRadii.xxl),
+                  boxShadow: [
+                    BoxShadow(
+                      color: MetaColors.inkDeep.withValues(alpha: 0.22),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.62,
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(MetaSpacing.base),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: MetaColors.inkDeep,
+                                borderRadius:
+                                    BorderRadius.circular(MetaRadii.full),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: MetaSpacing.base,
+                                  vertical: MetaSpacing.xs,
+                                ),
+                                child: Text(
+                                  character.name,
+                                  style: textTheme.labelLarge
+                                      ?.copyWith(color: MetaColors.canvas),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: MetaSpacing.md),
+                        Text(
+                          question.question,
+                          style: textTheme.bodyLarge
+                              ?.copyWith(height: 1.5),
+                        ),
+                        if (question.choices.isNotEmpty) ...[
+                          const SizedBox(height: MetaSpacing.md),
+                          ...question.choices.asMap().entries.map(
+                                (entry) => _ChoiceButton(
+                                  index: entry.key,
+                                  label: entry.value,
+                                  correctIndex: question.answerIndex,
+                                  selectedIndex: selectedChoice,
+                                  onTap: () => onChoiceSelected(entry.key),
+                                ),
+                              ),
+                        ],
+                        if (answered) ...[
+                          const SizedBox(height: MetaSpacing.md),
+                          _TutorReactionBubble(
+                            avatarUrl: api.assetUrl(character.baseImageUrl),
+                            text: correct
+                                ? question.correctReaction
+                                : question.wrongReaction,
+                          ),
+                          const SizedBox(height: MetaSpacing.md),
+                          _AffinityGainBar(
+                            scoreAfter: character.affinityScore,
+                            delta: answerAffinityDelta,
+                          ),
+                          const SizedBox(height: MetaSpacing.md),
+                          QuizExplanationPanel(
+                            explanation: question.explanation,
+                            choices: question.choices,
+                            explanations: question.choiceExplanations,
+                            answerIndex: question.answerIndex,
+                            selectedIndex: selectedChoice!,
+                          ),
+                          if (rewardAlreadyClaimed) ...[
+                            const SizedBox(height: MetaSpacing.md),
+                            Text(
+                              '이 문제의 호감도 보상은 이미 반영됐습니다.',
+                              style: textTheme.bodyMedium,
+                            ),
+                          ],
+                          const SizedBox(height: MetaSpacing.lg),
+                          FilledButton.icon(
+                            onPressed: onNext,
+                            icon: const Icon(Icons.arrow_forward),
+                            label: Text(
+                              questionIndex == quiz.questions.length - 1
+                                  ? '퀴즈 끝내기'
+                                  : '다음 문제',
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ],
-          const SizedBox(height: MetaSpacing.lg),
-          FilledButton.icon(
-            onPressed: onNext,
-            icon: const Icon(Icons.arrow_forward),
-            label: Text(questionIndex == quiz.questions.length - 1
-                ? '퀴즈 끝내기'
-                : '다음 문제'),
           ),
-        ],
+        ),
       ],
     );
   }
 }
 
-class _DifficultyChip extends StatelessWidget {
-  const _DifficultyChip({required this.difficulty});
+String _difficultyLabel(String difficulty) {
+  return switch (difficulty.toLowerCase()) {
+    'easy' => '난이도 쉬움',
+    'hard' => '난이도 어려움',
+    _ => '난이도 보통',
+  };
+}
 
-  final String difficulty;
+class _VisualBadge extends StatelessWidget {
+  const _VisualBadge({required this.text});
+
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    final normalized = difficulty.toLowerCase();
-    final label = switch (normalized) {
-      'easy' => '쉬움',
-      'hard' => '어려움',
-      _ => '보통',
-    };
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: MetaColors.surfaceSoft,
-          borderRadius: BorderRadius.circular(MetaRadii.full),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: MetaColors.inkDeep.withValues(alpha: 0.5),
+        border: Border.all(color: MetaColors.canvas.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(MetaRadii.full),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: MetaSpacing.md,
+          vertical: 6,
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: MetaSpacing.base,
-            vertical: MetaSpacing.xs,
-          ),
-          child:
-              Text('난이도 $label', style: Theme.of(context).textTheme.labelLarge),
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontSize: 12,
+                color: MetaColors.canvas,
+              ),
         ),
       ),
     );
