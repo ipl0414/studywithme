@@ -105,7 +105,9 @@ class _PlayScreenState extends State<PlayScreen> {
     final lastAssistant = _loadingHistory
         ? '이전 대화를 불러오는 중...'
         : (_latestText(_ChatRole.assistant) ??
-            '자료를 올리면 먼저 훑어보고 어디부터 같이 볼지 물어볼게.');
+            // '자료를 올리면 먼저 훑어보고 어디부터 같이 볼지 물어볼게.'
+            '안녕, 오늘 하루는 어땠어?'
+            );
     final lastUser = _latestText(_ChatRole.user);
 
     return Stack(
@@ -146,6 +148,7 @@ class _PlayScreenState extends State<PlayScreen> {
           child: _HudBar(
             character: widget.character,
             affinityStatus: widget.affinityStatus,
+            toggles: _buildToggles(),
           ),
         ),
         Positioned(
@@ -153,13 +156,12 @@ class _PlayScreenState extends State<PlayScreen> {
           right: MetaSpacing.base,
           bottom: MetaSpacing.base,
           child: _DialoguePanel(
-            characterName: widget.character.name,
             opacity: _dialogueOpacity,
             reply: _sending ? '(생각 중..)' : lastAssistant,
             userText: lastUser,
             error: _error,
             pdfCaption: _pdfMode ? _selectedMaterialTitles() : null,
-            toggles: _buildToggles(),
+            onHistory: _showHistory,
             composer: _buildComposer(),
           ),
         ),
@@ -178,9 +180,9 @@ class _PlayScreenState extends State<PlayScreen> {
   }
 
   Widget _buildToggles() {
-    return Wrap(
-      spacing: MetaSpacing.xs,
-      runSpacing: MetaSpacing.xs,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         _PillToggle(
           offLabel: 'Daily',
@@ -189,6 +191,7 @@ class _PlayScreenState extends State<PlayScreen> {
           disabled: _sending || !_hasMaterial,
           onChanged: (value) => setState(() => _pdfMode = value),
         ),
+        const SizedBox(height: MetaSpacing.xs),
         _PillToggle(
           offLabel: '짧게',
           onLabel: '길게',
@@ -224,6 +227,62 @@ class _PlayScreenState extends State<PlayScreen> {
           label: const Text('보내기'),
         ),
       ],
+    );
+  }
+
+  void _showHistory() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: MetaColors.canvas,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(MetaRadii.xxl)),
+      ),
+      builder: (sheetContext) {
+        final textTheme = Theme.of(sheetContext).textTheme;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.75,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(MetaSpacing.base),
+                  child: Row(
+                    children: [
+                      Text('채팅 기록', style: textTheme.titleLarge),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Flexible(
+                  child: _messages.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(MetaSpacing.xl),
+                          child: Text('아직 대화 기록이 없어요.',
+                              style: textTheme.bodyLarge),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(MetaSpacing.base),
+                          itemCount: _messages.length,
+                          itemBuilder: (_, index) => _HistoryRow(
+                            entry: _messages[index],
+                            characterName: widget.character.name,
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -291,7 +350,8 @@ class _PlayScreenState extends State<PlayScreen> {
 List<_ChatEntry> _initialMessages() {
   return [
     const _ChatEntry(
-      text: '자료를 올리면 먼저 훑어보고 어디부터 같이 볼지 물어볼게.',
+      // text: '자료를 올리면 먼저 훑어보고 어디부터 같이 볼지 물어볼게.',
+      text: '안녕, 오늘 하루는 어땠어?',
       role: _ChatRole.assistant,
     ),
   ];
@@ -322,10 +382,12 @@ class _HudBar extends StatelessWidget {
   const _HudBar({
     required this.character,
     required this.affinityStatus,
+    required this.toggles,
   });
 
   final CharacterDto character;
   final AffinityStatusDto? affinityStatus;
+  final Widget toggles;
 
   @override
   Widget build(BuildContext context) {
@@ -353,33 +415,44 @@ class _HudBar extends StatelessWidget {
               horizontal: MetaSpacing.base,
               vertical: MetaSpacing.md,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  character.name,
-                  style: textTheme.titleLarge?.copyWith(
-                    color: MetaColors.canvas,
-                    fontSize: 18,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        character.name,
+                        style: textTheme.titleLarge?.copyWith(
+                          color: MetaColors.canvas,
+                          fontSize: 18,
+                        ),
+                      ),
+                      Text(
+                        '관계: $stage · 호감도 $score',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: MetaColors.canvas.withValues(alpha: 0.86),
+                        ),
+                      ),
+                      const SizedBox(height: MetaSpacing.xs),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(MetaRadii.full),
+                        child: LinearProgressIndicator(
+                          minHeight: 8,
+                          value: score / 100,
+                          backgroundColor:
+                              MetaColors.canvas.withValues(alpha: 0.26),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            MetaColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  '관계: $stage · 호감도 $score',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: MetaColors.canvas.withValues(alpha: 0.86),
-                  ),
-                ),
-                const SizedBox(height: MetaSpacing.xs),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(MetaRadii.full),
-                  child: LinearProgressIndicator(
-                    minHeight: 8,
-                    value: score / 100,
-                    backgroundColor: MetaColors.canvas.withValues(alpha: 0.26),
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(MetaColors.primary),
-                  ),
-                ),
+                const SizedBox(width: MetaSpacing.md),
+                toggles,
               ],
             ),
           ),
@@ -476,25 +549,68 @@ class _PillToggle extends StatelessWidget {
   }
 }
 
+class _HistoryRow extends StatelessWidget {
+  const _HistoryRow({required this.entry, required this.characterName});
+
+  final _ChatEntry entry;
+  final String characterName;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    if (entry.role == _ChatRole.environment) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: MetaSpacing.xs),
+        child: Text(
+          entry.text,
+          textAlign: TextAlign.center,
+          style: textTheme.bodyMedium?.copyWith(
+            color: MetaColors.steel,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
+    final isUser = entry.role == _ChatRole.user;
+    final label = isUser ? '나' : characterName;
+    final labelColor = isUser ? MetaColors.primaryDeep : const Color(0xFF8BC34A);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: MetaSpacing.xs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: textTheme.labelLarge?.copyWith(color: labelColor),
+          ),
+          const SizedBox(height: 2),
+          Text(entry.text, style: textTheme.bodyLarge),
+        ],
+      ),
+    );
+  }
+}
+
 class _DialoguePanel extends StatelessWidget {
   const _DialoguePanel({
-    required this.characterName,
     required this.opacity,
     required this.reply,
     required this.composer,
-    required this.toggles,
+    required this.onHistory,
     this.pdfCaption,
     this.userText,
     this.error,
   });
 
-  final String characterName;
   final double opacity;
   final String reply;
   final String? userText;
   final String? error;
   final String? pdfCaption;
-  final Widget toggles;
+  final VoidCallback onHistory;
   final Widget composer;
 
   @override
@@ -525,45 +641,32 @@ class _DialoguePanel extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 직전 내 발화는 채팅창 오른쪽 위에 표시.
-                if (userText != null)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '나: $userText',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: textTheme.bodyMedium,
-                    ),
-                  ),
-                // Tutor 이름 배지 옆에 모드 토글 (Daily/PDF · 짧게/길게).
+                // 왼쪽: 직전 내 발화 / 오른쪽: 채팅 기록 버튼.
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: MetaColors.inkDeep,
-                        borderRadius: BorderRadius.circular(MetaRadii.full),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: MetaSpacing.base,
-                          vertical: MetaSpacing.xs,
-                        ),
-                        child: Text(
-                          characterName,
-                          style: textTheme.labelLarge?.copyWith(
-                            color: MetaColors.canvas,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: MetaSpacing.xs),
                     Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: toggles,
+                      child: userText == null
+                          ? const SizedBox.shrink()
+                          : Text(
+                              '나: $userText',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodyMedium,
+                            ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: onHistory,
+                      icon: const Icon(Icons.history, size: 16),
+                      label: const Text('채팅 기록'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: MetaColors.steel,
+                        side: const BorderSide(color: MetaColors.hairline),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: MetaSpacing.md,
+                          vertical: 4,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
                   ],
@@ -597,7 +700,7 @@ class _DialoguePanel extends StatelessWidget {
                         ?.copyWith(color: MetaColors.critical),
                   ),
                 ],
-                const SizedBox(height: MetaSpacing.md),
+                const SizedBox(height: MetaSpacing.xs),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 150),
                   child: SingleChildScrollView(
