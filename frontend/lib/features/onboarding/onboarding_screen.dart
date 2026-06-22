@@ -30,8 +30,8 @@ const _hairColors = ['검은색', '갈색', '노란색', '은색'];
 const _impressions = ['부드러운', '중간', '강한'];
 const _accessories = ['안경', '귀걸이', '피어싱', '모자'];
 
-const _femaleColor = Color(0xFFE8546B);
-const _maleColor = Color(0xFF3B82F6);
+const _femaleColor = MetaColors.characterRed;
+const _maleColor = MetaColors.characterMagenta;
 
 // 전반적으로 밝은 피부 톤(밝음 → 약간 어두움 순).
 const _skinTones = <_SkinTone>[
@@ -127,38 +127,47 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(MetaSpacing.xl),
-              child: Row(
-                children: [
-                  if (_step > 0)
-                    OutlinedButton(
-                      onPressed: _creating
-                          ? null
-                          : () => setState(() {
-                                _step -= 1;
-                                _error = null;
-                              }),
-                      child: const Text('이전'),
-                    )
-                  else if (Navigator.of(context).canPop())
-                    OutlinedButton(
-                      onPressed:
-                          _creating ? null : () => Navigator.of(context).pop(),
-                      child: const Text('취소'),
+            DecoratedBox(
+              decoration: const BoxDecoration(
+                color: MetaColors.surface,
+                border: Border(
+                  top: BorderSide(color: MetaColors.hairline),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(MetaSpacing.xl),
+                child: Row(
+                  children: [
+                    if (_step > 0)
+                      OutlinedButton(
+                        onPressed: _creating
+                            ? null
+                            : () => setState(() {
+                                  _step -= 1;
+                                  _error = null;
+                                }),
+                        child: const Text('이전'),
+                      )
+                    else if (Navigator.of(context).canPop())
+                      OutlinedButton(
+                        onPressed: _creating
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        child: const Text('취소'),
+                      ),
+                    const Spacer(),
+                    FilledButton(
+                      onPressed: _creating ? null : _onPrimaryPressed,
+                      child: Text(
+                        _creating
+                            ? '생성 중...'
+                            : isLast
+                                ? widget.submitLabel
+                                : '다음',
+                      ),
                     ),
-                  const Spacer(),
-                  FilledButton(
-                    onPressed: _creating ? null : _onPrimaryPressed,
-                    child: Text(
-                      _creating
-                          ? '생성 중...'
-                          : isLast
-                              ? widget.submitLabel
-                              : '다음',
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -197,9 +206,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return ChoiceChip(
       label: Text(label),
       selected: selected,
-      selectedColor: color,
+      selectedColor: MetaColors.primarySoft,
+      backgroundColor: MetaColors.surface,
+      side: BorderSide(color: selected ? color : MetaColors.hairline),
       labelStyle: TextStyle(
-        color: selected ? MetaColors.canvas : MetaColors.ink,
+        color: selected ? color : MetaColors.ink,
         fontWeight: FontWeight.w700,
       ),
       onSelected: (_) => setState(() => _gender = label),
@@ -403,7 +414,7 @@ class _StepIndicator extends StatelessWidget {
                 Container(
                   height: 6,
                   decoration: BoxDecoration(
-                    color: active ? MetaColors.primary : MetaColors.hairlineSoft,
+                    color: active ? MetaColors.primary : MetaColors.hairline,
                     borderRadius: BorderRadius.circular(MetaRadii.full),
                   ),
                 ),
@@ -411,7 +422,8 @@ class _StepIndicator extends StatelessWidget {
                 Text(
                   '${index + 1}. ${_titles[index]}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: active ? MetaColors.inkDeep : MetaColors.stone,
+                        color:
+                            active ? MetaColors.primaryDeep : MetaColors.steel,
                         fontWeight:
                             index == step ? FontWeight.w700 : FontWeight.w400,
                       ),

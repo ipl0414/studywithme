@@ -106,8 +106,7 @@ class _PlayScreenState extends State<PlayScreen> {
         ? '이전 대화를 불러오는 중...'
         : (_latestText(_ChatRole.assistant) ??
             // '자료를 올리면 먼저 훑어보고 어디부터 같이 볼지 물어볼게.'
-            '안녕, 오늘 하루는 어땠어?'
-            );
+            '안녕, 오늘 하루는 어땠어?');
     final lastUser = _latestText(_ChatRole.user);
 
     return Stack(
@@ -233,10 +232,11 @@ class _PlayScreenState extends State<PlayScreen> {
   void _showHistory() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: MetaColors.canvas,
+      backgroundColor: MetaColors.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(MetaRadii.xxl)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(MetaRadii.xxl)),
       ),
       builder: (sheetContext) {
         final textTheme = Theme.of(sheetContext).textTheme;
@@ -406,7 +406,7 @@ class _HudBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: MetaColors.inkDeep.withValues(alpha: 0.46),
             border: Border.all(
-              color: MetaColors.canvas.withValues(alpha: 0.18),
+              color: MetaColors.surface.withValues(alpha: 0.26),
             ),
             borderRadius: BorderRadius.circular(MetaRadii.xxl),
           ),
@@ -442,7 +442,7 @@ class _HudBar extends StatelessWidget {
                           minHeight: 8,
                           value: score / 100,
                           backgroundColor:
-                              MetaColors.canvas.withValues(alpha: 0.26),
+                              MetaColors.surface.withValues(alpha: 0.26),
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             MetaColors.primary,
                           ),
@@ -487,7 +487,7 @@ class _PillToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = value ? onLabel : offLabel;
-    final labelColor = value ? MetaColors.canvas : MetaColors.inkDeep;
+    final labelColor = value ? MetaColors.surface : MetaColors.primaryDeep;
 
     return Opacity(
       opacity: disabled ? 0.45 : 1,
@@ -501,8 +501,10 @@ class _PillToggle extends StatelessWidget {
             width: _width,
             height: _height,
             decoration: BoxDecoration(
-              color: value ? MetaColors.inkDeep : MetaColors.canvas,
-              border: Border.all(color: MetaColors.inkDeep, width: 2.5),
+              color: value ? MetaColors.primary : MetaColors.surface,
+              border: Border.all(
+                color: value ? MetaColors.primary : MetaColors.hairline,
+              ),
               borderRadius: BorderRadius.circular(MetaRadii.full),
             ),
             child: Stack(
@@ -534,7 +536,9 @@ class _PillToggle extends StatelessWidget {
                       width: _knob,
                       height: _knob,
                       decoration: BoxDecoration(
-                        color: value ? MetaColors.canvas : MetaColors.inkDeep,
+                        color:
+                            value ? MetaColors.surface : MetaColors.primarySoft,
+                        border: Border.all(color: MetaColors.hairline),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -575,7 +579,7 @@ class _HistoryRow extends StatelessWidget {
 
     final isUser = entry.role == _ChatRole.user;
     final label = isUser ? '나' : characterName;
-    final labelColor = isUser ? MetaColors.primaryDeep : const Color(0xFF8BC34A);
+    final labelColor = isUser ? MetaColors.primaryDeep : MetaColors.primary;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: MetaSpacing.xs),
@@ -623,13 +627,13 @@ class _DialoguePanel extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: MetaColors.canvas.withValues(alpha: opacity),
+            color: MetaColors.surface.withValues(alpha: opacity),
             border:
-                Border.all(color: MetaColors.canvas.withValues(alpha: 0.42)),
+                Border.all(color: MetaColors.hairline.withValues(alpha: 0.8)),
             borderRadius: BorderRadius.circular(MetaRadii.xxl),
             boxShadow: [
               BoxShadow(
-                color: MetaColors.inkDeep.withValues(alpha: 0.18),
+                color: MetaColors.primaryDeep.withValues(alpha: 0.14),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -661,6 +665,8 @@ class _DialoguePanel extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: MetaColors.steel,
                         side: const BorderSide(color: MetaColors.hairline),
+                        backgroundColor:
+                            MetaColors.surface.withValues(alpha: 0.8),
                         padding: const EdgeInsets.symmetric(
                           horizontal: MetaSpacing.md,
                           vertical: 4,

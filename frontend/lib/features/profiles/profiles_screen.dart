@@ -244,7 +244,7 @@ class _ProfileCard extends StatelessWidget {
                         icon: const Icon(Icons.edit_outlined, size: 18),
                         label: const Text('편집'),
                         style: TextButton.styleFrom(
-                          foregroundColor: MetaColors.inkDeep,
+                          foregroundColor: MetaColors.primary,
                           padding: const EdgeInsets.symmetric(
                             horizontal: MetaSpacing.xs,
                           ),

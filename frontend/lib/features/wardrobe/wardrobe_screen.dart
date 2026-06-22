@@ -296,21 +296,21 @@ class _LockedCostumeSilhouette extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: MetaColors.inkDeep,
+      color: MetaColors.primaryDeep,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
               Icons.lock_outline,
-              color: MetaColors.canvas,
+              color: MetaColors.surface,
               size: 48,
             ),
             const SizedBox(height: MetaSpacing.md),
             Text(
               '호감도 $unlockScore',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: MetaColors.canvas,
+                    color: MetaColors.surface,
                   ),
             ),
           ],

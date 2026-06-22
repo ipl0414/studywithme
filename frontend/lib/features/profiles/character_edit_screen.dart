@@ -45,11 +45,17 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
 
     return Scaffold(
       backgroundColor: MetaColors.canvas,
-      appBar: AppBar(
-        backgroundColor: MetaColors.canvas,
-        surfaceTintColor: MetaColors.canvas,
-        elevation: 0,
-        title: const Text('프로필 편집'),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight + 1),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: MetaColors.surface,
+            border: Border(
+              bottom: BorderSide(color: MetaColors.hairline),
+            ),
+          ),
+          child: AppBar(title: const Text('프로필 편집')),
+        ),
       ),
       body: SafeArea(
         child: ListView(

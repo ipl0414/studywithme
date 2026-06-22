@@ -229,8 +229,7 @@ class _StudyShellState extends State<StudyShell> {
     final wasCurrent = _character?.id == characterId;
     final remaining =
         _characters.where((item) => item.id != characterId).toList();
-    final current =
-        wasCurrent ? await _api.getCurrentCharacter() : _character;
+    final current = wasCurrent ? await _api.getCurrentCharacter() : _character;
     final costumes = current == null
         ? <CostumeDto>[]
         : await _api.listCostumes(characterId: current.id);
@@ -446,7 +445,7 @@ class _SideMenu extends StatelessWidget {
     return Align(
       alignment: Alignment.centerRight,
       child: Padding(
-        padding: const EdgeInsets.only(right: MetaSpacing.xs),
+        padding: const EdgeInsets.only(right: MetaSpacing.md),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -490,30 +489,31 @@ class _SideButton extends StatelessWidget {
     return Column(
       children: [
         Material(
-          color: MetaColors.inkDeep.withValues(alpha: 0.5),
-          shape: const CircleBorder(
-            side: BorderSide(color: Color(0x3DFFFFFF)),
+          color: MetaColors.surface.withValues(alpha: 0.92),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: MetaColors.hairline),
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
             child: SizedBox(
-              width: 52,
-              height: 52,
-              child: Icon(icon, color: MetaColors.canvas, size: 24),
+              width: 44,
+              height: 44,
+              child: Icon(icon, color: MetaColors.primary, size: 20),
             ),
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontSize: 11,
-                color: MetaColors.canvas,
-                shadows: const [
-                  Shadow(color: Color(0xCC000000), blurRadius: 4),
-                ],
-              ),
+            fontSize: 10,
+            color: MetaColors.surface,
+            shadows: const [
+              Shadow(color: Color(0xCC000000), blurRadius: 4),
+            ],
+          ),
         ),
       ],
     );
@@ -536,15 +536,34 @@ class _PanelScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MetaColors.canvas,
-      appBar: AppBar(
-        backgroundColor: MetaColors.canvas,
-        surfaceTintColor: MetaColors.canvas,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: onClose,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight + 1),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: MetaColors.surface,
+            border: Border(
+              bottom: BorderSide(color: MetaColors.hairline),
+            ),
+          ),
+          child: AppBar(
+            leading: Padding(
+              padding: const EdgeInsets.only(left: MetaSpacing.xs),
+              child: IconButton.filledTonal(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: onClose,
+                style: IconButton.styleFrom(
+                  backgroundColor: MetaColors.primarySoft,
+                  foregroundColor: MetaColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: const BorderSide(color: MetaColors.primary),
+                  ),
+                ),
+              ),
+            ),
+            title: Text(title),
+          ),
         ),
-        title: Text(title),
       ),
       body: child,
     );

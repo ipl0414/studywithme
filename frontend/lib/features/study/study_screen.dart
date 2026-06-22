@@ -423,9 +423,10 @@ class _VisualQuiz extends StatelessWidget {
           child: Row(
             children: [
               Material(
-                color: MetaColors.inkDeep.withValues(alpha: 0.5),
-                shape: const CircleBorder(
-                  side: BorderSide(color: Color(0x3DFFFFFF)),
+                color: MetaColors.surface.withValues(alpha: 0.92),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: const BorderSide(color: MetaColors.hairline),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
@@ -433,7 +434,7 @@ class _VisualQuiz extends StatelessWidget {
                   child: const SizedBox(
                     width: 44,
                     height: 44,
-                    child: Icon(Icons.close, color: MetaColors.canvas),
+                    child: Icon(Icons.close, color: MetaColors.primary),
                   ),
                 ),
               ),
@@ -456,14 +457,14 @@ class _VisualQuiz extends StatelessWidget {
               filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: MetaColors.canvas.withValues(alpha: 0.9),
+                  color: MetaColors.surface.withValues(alpha: 0.94),
                   border: Border.all(
-                    color: MetaColors.canvas.withValues(alpha: 0.42),
+                    color: MetaColors.hairline,
                   ),
                   borderRadius: BorderRadius.circular(MetaRadii.xxl),
                   boxShadow: [
                     BoxShadow(
-                      color: MetaColors.inkDeep.withValues(alpha: 0.22),
+                      color: MetaColors.primaryDeep.withValues(alpha: 0.12),
                       blurRadius: 24,
                       offset: const Offset(0, 12),
                     ),
@@ -482,7 +483,7 @@ class _VisualQuiz extends StatelessWidget {
                           children: [
                             DecoratedBox(
                               decoration: BoxDecoration(
-                                color: MetaColors.inkDeep,
+                                color: MetaColors.primarySoft,
                                 borderRadius:
                                     BorderRadius.circular(MetaRadii.full),
                               ),
@@ -494,7 +495,7 @@ class _VisualQuiz extends StatelessWidget {
                                 child: Text(
                                   character.name,
                                   style: textTheme.labelLarge
-                                      ?.copyWith(color: MetaColors.canvas),
+                                      ?.copyWith(color: MetaColors.primaryDeep),
                                 ),
                               ),
                             ),
@@ -503,8 +504,7 @@ class _VisualQuiz extends StatelessWidget {
                         const SizedBox(height: MetaSpacing.md),
                         Text(
                           question.question,
-                          style: textTheme.bodyLarge
-                              ?.copyWith(height: 1.5),
+                          style: textTheme.bodyLarge?.copyWith(height: 1.5),
                         ),
                         if (question.choices.isNotEmpty) ...[
                           const SizedBox(height: MetaSpacing.md),
@@ -587,8 +587,8 @@ class _VisualBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: MetaColors.inkDeep.withValues(alpha: 0.5),
-        border: Border.all(color: MetaColors.canvas.withValues(alpha: 0.2)),
+        color: MetaColors.surface.withValues(alpha: 0.92),
+        border: Border.all(color: MetaColors.hairline),
         borderRadius: BorderRadius.circular(MetaRadii.full),
       ),
       child: Padding(
@@ -600,7 +600,7 @@ class _VisualBadge extends StatelessWidget {
           text,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 fontSize: 12,
-                color: MetaColors.canvas,
+                color: MetaColors.primaryDeep,
               ),
         ),
       ),
@@ -646,6 +646,7 @@ class _AffinityGainBarState extends State<_AffinityGainBar> {
       padding: const EdgeInsets.all(MetaSpacing.base),
       decoration: BoxDecoration(
         color: MetaColors.surfaceSoft,
+        border: Border.all(color: MetaColors.hairline),
         borderRadius: BorderRadius.circular(MetaRadii.xl),
       ),
       child: Column(
@@ -725,7 +726,10 @@ class _MaterialRow extends StatelessWidget {
         vertical: MetaSpacing.xs,
       ),
       decoration: BoxDecoration(
-        border: Border.all(color: MetaColors.hairlineSoft),
+        color: selected ? MetaColors.primarySoft : MetaColors.surface,
+        border: Border.all(
+          color: selected ? MetaColors.primary : MetaColors.hairline,
+        ),
         borderRadius: BorderRadius.circular(MetaRadii.lg),
       ),
       child: Row(
@@ -792,7 +796,7 @@ class _TutorReactionBubble extends StatelessWidget {
         Flexible(
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: MetaColors.surfaceSoft,
+              color: MetaColors.primarySoft,
               borderRadius: BorderRadius.circular(MetaRadii.xxl),
             ),
             child: Padding(
@@ -828,13 +832,13 @@ class _ChoiceButton extends StatelessWidget {
     final isCorrect = correctIndex == index;
     final Color borderColor;
     if (!answered) {
-      borderColor = MetaColors.hairlineSoft;
+      borderColor = MetaColors.hairline;
     } else if (isCorrect) {
       borderColor = MetaColors.success;
     } else if (isSelected) {
       borderColor = MetaColors.critical;
     } else {
-      borderColor = MetaColors.hairlineSoft;
+      borderColor = MetaColors.hairline;
     }
 
     return Padding(
@@ -843,6 +847,14 @@ class _ChoiceButton extends StatelessWidget {
         onPressed: answered ? null : onTap,
         style: OutlinedButton.styleFrom(
           alignment: Alignment.centerLeft,
+          foregroundColor: answered && !isCorrect && isSelected
+              ? MetaColors.critical
+              : MetaColors.inkDeep,
+          backgroundColor: answered && isCorrect
+              ? MetaColors.success.withValues(alpha: 0.08)
+              : selectedIndex == index
+                  ? MetaColors.primarySoft
+                  : MetaColors.surface,
           side: BorderSide(color: borderColor, width: answered ? 2 : 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(MetaRadii.xl),

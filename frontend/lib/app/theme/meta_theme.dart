@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 
 class MetaColors {
-  static const primary = Color(0xFF0064E0);
-  static const primaryDeep = Color(0xFF0457CB);
-  static const canvas = Color(0xFFFFFFFF);
-  static const surfaceSoft = Color(0xFFF1F4F7);
-  static const inkButton = Color(0xFF000000);
-  static const inkDeep = Color(0xFF0A1317);
-  static const ink = Color(0xFF1C1E21);
-  static const steel = Color(0xFF5D6C7B);
-  static const stone = Color(0xFF8595A4);
-  static const hairline = Color(0xFFCED0D4);
-  static const hairlineSoft = Color(0xFFDEE3E9);
+  static const primary = Color(0xFFE8457A);
+  static const primaryDeep = Color(0xFFC03260);
+  static const primarySoft = Color(0xFFFFE4EC);
+  static const canvas = Color(0xFFFFF5F7);
+  static const surface = Color(0xFFFFFFFF);
+  static const surfaceSoft = Color(0xFFFFE4EC);
+  static const inkButton = Color(0xFFE8457A);
+  static const inkDeep = Color(0xFF2D1B33);
+  static const ink = Color(0xFF2D1B33);
+  static const steel = Color(0xFF9B8A9F);
+  static const stone = Color(0xFFD6CDD9);
+  static const hairline = Color(0xFFF0D6E0);
+  static const hairlineSoft = Color(0xFFF0D6E0);
+  static const iconBase = Color(0xFFE8E0EB);
+  static const characterRed = Color(0xFFF2426B);
+  static const characterMagenta = Color(0xFFE34FCF);
   static const success = Color(0xFF31A24C);
   static const warning = Color(0xFFF7B928);
   static const critical = Color(0xFFE41E3F);
@@ -37,75 +42,106 @@ class MetaSpacing {
 }
 
 class MetaTheme {
+  static const _fontFamily = 'MalgunGothic';
+  static const _fontFallback = ['Roboto'];
+
   static ThemeData light() {
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: MetaColors.primary,
         primary: MetaColors.primary,
+        onPrimary: MetaColors.surface,
         surface: MetaColors.canvas,
+        onSurface: MetaColors.inkDeep,
       ),
       scaffoldBackgroundColor: MetaColors.canvas,
-      fontFamily: 'Montserrat',
+      fontFamily: _fontFamily,
+      fontFamilyFallback: _fontFallback,
     );
 
     return base.copyWith(
       textTheme: base.textTheme.copyWith(
         displayLarge: const TextStyle(
-          fontSize: 48,
-          height: 1.17,
-          fontWeight: FontWeight.w500,
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
+          fontSize: 24,
+          height: 1.5,
+          fontWeight: FontWeight.w700,
           color: MetaColors.inkDeep,
           letterSpacing: 0,
         ),
         headlineLarge: const TextStyle(
-          fontSize: 36,
-          height: 1.28,
-          fontWeight: FontWeight.w500,
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
+          fontSize: 24,
+          height: 1.5,
+          fontWeight: FontWeight.w700,
           color: MetaColors.inkDeep,
           letterSpacing: 0,
         ),
         headlineMedium: const TextStyle(
-          fontSize: 28,
-          height: 1.21,
-          fontWeight: FontWeight.w300,
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
+          fontSize: 20,
+          height: 1.4,
+          fontWeight: FontWeight.w700,
           color: MetaColors.inkDeep,
           letterSpacing: 0,
         ),
         titleLarge: const TextStyle(
-          fontSize: 24,
-          height: 1.25,
-          fontWeight: FontWeight.w500,
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
+          fontSize: 18,
+          height: 1.4,
+          fontWeight: FontWeight.w700,
           color: MetaColors.inkDeep,
           letterSpacing: 0,
         ),
         bodyLarge: const TextStyle(
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
           fontSize: 16,
           height: 1.5,
           fontWeight: FontWeight.w400,
           color: MetaColors.ink,
-          letterSpacing: -0.16,
+          letterSpacing: 0,
         ),
         bodyMedium: const TextStyle(
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
           fontSize: 14,
-          height: 1.43,
+          height: 1.5,
           fontWeight: FontWeight.w400,
           color: MetaColors.steel,
-          letterSpacing: -0.14,
+          letterSpacing: 0,
         ),
         labelLarge: const TextStyle(
-          fontSize: 14,
-          height: 1.43,
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
+          fontSize: 12,
+          height: 1.5,
           fontWeight: FontWeight.w700,
-          letterSpacing: -0.14,
+          letterSpacing: 0,
+          color: MetaColors.inkDeep,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: MetaColors.inkButton,
-          foregroundColor: MetaColors.canvas,
-          minimumSize: const Size(44, 44),
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
+          backgroundColor: MetaColors.primary,
+          disabledBackgroundColor: MetaColors.stone,
+          foregroundColor: MetaColors.surface,
+          disabledForegroundColor: MetaColors.surface,
+          minimumSize: const Size(48, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+          textStyle: const TextStyle(
+            fontFamily: _fontFamily,
+            fontFamilyFallback: _fontFallback,
+            fontSize: 15,
+            height: 1.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(MetaRadii.full),
           ),
@@ -113,26 +149,127 @@ class MetaTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: MetaColors.inkDeep,
-          side: const BorderSide(color: MetaColors.inkDeep, width: 2),
-          minimumSize: const Size(44, 44),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+          foregroundColor: MetaColors.primary,
+          disabledForegroundColor: MetaColors.stone,
+          side: const BorderSide(color: MetaColors.primary),
+          minimumSize: const Size(48, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          textStyle: const TextStyle(
+            fontFamily: _fontFamily,
+            fontFamilyFallback: _fontFallback,
+            fontSize: 15,
+            height: 1.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(MetaRadii.full),
           ),
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: MetaColors.primary,
+          textStyle: const TextStyle(
+            fontFamily: _fontFamily,
+            fontFamilyFallback: _fontFallback,
+            fontSize: 14,
+            height: 1.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: MetaColors.canvas,
+        fillColor: MetaColors.surface,
+        hintStyle: const TextStyle(
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
+          color: MetaColors.steel,
+        ),
+        labelStyle: const TextStyle(
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
+          color: MetaColors.steel,
+        ),
         contentPadding: const EdgeInsets.all(MetaSpacing.md),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(MetaRadii.lg),
+          borderRadius: BorderRadius.circular(MetaRadii.xl),
+          borderSide: const BorderSide(color: MetaColors.hairline),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(MetaRadii.xl),
           borderSide: const BorderSide(color: MetaColors.hairline),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(MetaRadii.lg),
+          borderRadius: BorderRadius.circular(MetaRadii.xl),
           borderSide: const BorderSide(color: MetaColors.primary, width: 2),
+        ),
+      ),
+      chipTheme: base.chipTheme.copyWith(
+        backgroundColor: MetaColors.surface,
+        selectedColor: MetaColors.primarySoft,
+        disabledColor: MetaColors.stone.withValues(alpha: 0.22),
+        side: const BorderSide(color: MetaColors.hairline),
+        labelStyle: const TextStyle(
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
+          color: MetaColors.inkDeep,
+          fontSize: 14,
+          height: 1.5,
+          letterSpacing: 0,
+        ),
+        secondaryLabelStyle: const TextStyle(
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
+          color: MetaColors.primaryDeep,
+          fontSize: 14,
+          height: 1.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MetaRadii.full),
+        ),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: MetaColors.surface,
+        foregroundColor: MetaColors.inkDeep,
+        surfaceTintColor: MetaColors.surface,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          fontFamily: _fontFamily,
+          fontFamilyFallback: _fontFallback,
+          color: MetaColors.inkDeep,
+          fontSize: 20,
+          height: 1.4,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: MetaColors.hairline,
+        thickness: 1,
+        space: 1,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: MetaColors.inkDeep,
+        contentTextStyle: base.textTheme.bodyMedium?.copyWith(
+          color: MetaColors.surface,
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MetaRadii.xl),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: MetaColors.surface,
+        surfaceTintColor: MetaColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MetaRadii.xxl),
+          side: const BorderSide(color: MetaColors.hairline),
         ),
       ),
     );

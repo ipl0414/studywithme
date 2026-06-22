@@ -6,8 +6,8 @@ class RoundedSection extends StatelessWidget {
   const RoundedSection({
     required this.child,
     super.key,
-    this.padding = const EdgeInsets.all(MetaSpacing.xxl),
-    this.radius = MetaRadii.xxxl,
+    this.padding = const EdgeInsets.all(MetaSpacing.lg),
+    this.radius = MetaRadii.xl,
   });
 
   final Widget child;
@@ -18,9 +18,16 @@ class RoundedSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: MetaColors.canvas,
-        border: Border.all(color: MetaColors.hairlineSoft),
+        color: MetaColors.surface,
+        border: Border.all(color: MetaColors.hairline),
         borderRadius: BorderRadius.circular(radius),
+        boxShadow: [
+          BoxShadow(
+            color: MetaColors.primaryDeep.withValues(alpha: 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Padding(
         padding: padding,

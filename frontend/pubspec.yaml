@@ -21,3 +21,14 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
+    - family: MalgunGothic
+      fonts:
+        - asset: assets/fonts/MalgunGothic.ttf
