@@ -79,6 +79,31 @@ class ApiClient {
     return CharacterDto.fromJson(body);
   }
 
+  Future<CharacterDto> updateCharacter({
+    required String characterId,
+    required String name,
+    required String personaText,
+    required String appearanceText,
+  }) async {
+    final body = await _patchJson('/characters/$characterId', {
+      'name': name,
+      'persona_text': personaText,
+      'appearance_text': appearanceText,
+    });
+    return CharacterDto.fromJson(body);
+  }
+
+  Future<void> deleteCharacter(String characterId) async {
+    final response =
+        await http.delete(Uri.parse('$baseUrl/characters/$characterId'));
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final detail = decoded is Map<String, dynamic> ? decoded['detail'] : null;
+      throw ApiException(
+          response.statusCode, detail?.toString() ?? response.body);
+    }
+  }
+
   Future<CharacterDto> equipDefaultImage(String characterId) async {
     final body = await _postJson('/characters/$characterId/equip-default', {});
     return CharacterDto.fromJson(body);

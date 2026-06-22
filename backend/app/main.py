@@ -28,6 +28,7 @@ from .schemas import (
     CharacterCreateRequest,
     CharacterIdRequest,
     CharacterResponse,
+    CharacterUpdateRequest,
     ChatMessageRequest,
     ChatMessageResponse,
     ChatHistoryMessageResponse,
@@ -70,7 +71,7 @@ quiz_chunk_selector = QuizChunkSelector()
 openai_client = OpenAITextClient.from_env()
 openai_image_client = OpenAIImageClient.from_env()
 QUIZ_AFFINITY_DAILY_LIMIT = 24
-CHECKIN_REWARD_DELTA = 3
+CHECKIN_REWARD_DELTA = 1
 COSTUME_DEFINITIONS: tuple[tuple[str, int, str], ...] = (
     (
         "캠퍼스 카디건",
@@ -92,6 +93,13 @@ COSTUME_DEFINITIONS: tuple[tuple[str, int, str], ...] = (
 
 def demo_user_id() -> str:
     return store.demo_user_id
+
+
+def get_character_or_404(character_id: str):
+    try:
+        return store.get_character(character_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Character not found.") from exc
 
 
 def character_response(character) -> CharacterResponse:
@@ -238,6 +246,33 @@ def select_character(character_id: str) -> CharacterResponse:
     return character_response(character)
 
 
+@app.patch("/characters/{character_id}", response_model=CharacterResponse)
+def update_character(
+    character_id: str,
+    request: CharacterUpdateRequest,
+) -> CharacterResponse:
+    try:
+        character = store.update_character(
+            demo_user_id(),
+            character_id,
+            name=request.name,
+            persona_text=request.persona_text,
+            appearance_text=request.appearance_text,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Character not found.") from exc
+    return character_response(character)
+
+
+@app.delete("/characters/{character_id}", response_model=CharacterResponse)
+def delete_character(character_id: str) -> CharacterResponse:
+    try:
+        character = store.delete_character(demo_user_id(), character_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Character not found.") from exc
+    return character_response(character)
+
+
 @app.post("/characters/{character_id}/equip-default", response_model=CharacterResponse)
 def equip_default_character_image(character_id: str) -> CharacterResponse:
     try:
@@ -296,7 +331,7 @@ async def upload_material(file: UploadFile = File(...)) -> MaterialResponse:
     try:
         pages = pdf_text_extractor.extract_pages(pdf_bytes)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail="Could not read text from the PDF.") from exc
+        raise HTTPException(status_code=400, detail=f"Could not read text from the PDF: {exc}") from exc
     if not pages:
         raise HTTPException(status_code=400, detail="No extractable text was found in the PDF.")
 
@@ -308,7 +343,7 @@ async def upload_material(file: UploadFile = File(...)) -> MaterialResponse:
 
 @app.post("/chat/messages", response_model=ChatMessageResponse)
 def send_chat_message(request: ChatMessageRequest) -> ChatMessageResponse:
-    character = store.get_character(request.character_id)
+    character = get_character_or_404(request.character_id)
     context = CharacterContext(
         persona_text=character.persona_text,
         appearance_text=character.appearance_text,
@@ -397,7 +432,7 @@ def generate_quiz(request: QuizGenerateRequest) -> QuizResponse:
     material_title = " + ".join(material.title for material in materials)
     character_context_text = "No character context was provided."
     if request.character_id:
-        character = store.get_character(request.character_id)
+        character = get_character_or_404(request.character_id)
         character_context_text = (
             f"Character persona: {character.persona_text}\n"
             f"Character appearance: {character.appearance_text}\n"
@@ -495,7 +530,7 @@ def _generate_quiz_text_with_fallback(
 
 @app.post("/affinity/events", response_model=AffinityResponse)
 def apply_affinity_event(request: AffinityEventRequest) -> AffinityResponse:
-    character = store.get_character(request.character_id)
+    character = get_character_or_404(request.character_id)
     today = request.event_date or date.today()
     _reset_daily_affinity_if_needed(character, today)
     if (
@@ -555,7 +590,7 @@ def apply_affinity_event(request: AffinityEventRequest) -> AffinityResponse:
 
 @app.get("/affinity/status", response_model=AffinityStatusResponse)
 def get_affinity_status(character_id: str) -> AffinityStatusResponse:
-    character = store.get_character(character_id)
+    character = get_character_or_404(character_id)
     _reset_daily_affinity_if_needed(character, date.today())
     stage = affinity_service.stage_for(character.affinity_score)
     return AffinityStatusResponse(
@@ -574,7 +609,7 @@ def get_affinity_status(character_id: str) -> AffinityStatusResponse:
 
 @app.post("/affinity/checkin", response_model=AffinityResponse)
 def apply_checkin_affinity(request: CharacterIdRequest) -> AffinityResponse:
-    character = store.get_character(request.character_id)
+    character = get_character_or_404(request.character_id)
     today = date.today()
     _reset_daily_affinity_if_needed(character, today)
     if character.last_checkin_date == today:
