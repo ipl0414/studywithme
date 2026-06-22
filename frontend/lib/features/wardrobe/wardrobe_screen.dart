@@ -12,6 +12,7 @@ class WardrobeScreen extends StatefulWidget {
     required this.character,
     required this.costumes,
     required this.onCharacterChanged,
+    required this.onEquipped,
     required this.onRefresh,
   });
 
@@ -19,6 +20,7 @@ class WardrobeScreen extends StatefulWidget {
   final CharacterDto character;
   final List<CostumeDto> costumes;
   final ValueChanged<CharacterDto> onCharacterChanged;
+  final VoidCallback onEquipped;
   final Future<void> Function() onRefresh;
 
   @override
@@ -85,6 +87,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     try {
       final updated = await widget.api.equipDefaultImage(widget.character.id);
       widget.onCharacterChanged(updated);
+      widget.onEquipped();
     } catch (error) {
       if (mounted) {
         setState(() => _error = error.toString());
@@ -107,12 +110,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         characterId: widget.character.id,
       );
       widget.onCharacterChanged(updated);
+      widget.onEquipped();
       await widget.onRefresh();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${costume.name}으로 갈아입었습니다.')),
-        );
-      }
     } catch (error) {
       if (mounted) {
         setState(() => _error = error.toString());

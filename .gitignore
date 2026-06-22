@@ -27,6 +27,7 @@ frontend/build/
 .playwright-cli/
 output/
 *.log
+*.sqlite3
 
 # Prototype, presentation, and planning artifacts
 demo/

@@ -32,6 +32,7 @@ class PlayScreen extends StatefulWidget {
 
 class _PlayScreenState extends State<PlayScreen> {
   static const _dialogueOpacity = 0.82;
+  static const _maxChatHistoryMessages = 20;
 
   final _controller = TextEditingController();
   List<_ChatEntry> _messages = _initialMessages();
@@ -39,7 +40,10 @@ class _PlayScreenState extends State<PlayScreen> {
   bool _longReplyMode = false;
   bool _loadingHistory = false;
   bool _sending = false;
+  bool _hudCollapsed = false;
   String? _error;
+  String? _currentExpressionImageUrl;
+  String _currentExpression = 'neutral';
 
   @override
   void initState() {
@@ -51,7 +55,17 @@ class _PlayScreenState extends State<PlayScreen> {
   void didUpdateWidget(covariant PlayScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.character.id != widget.character.id) {
+      _currentExpressionImageUrl = null;
+      _currentExpression = 'neutral';
       _loadHistory();
+    }
+    if (oldWidget.character.baseImageUrl != widget.character.baseImageUrl ||
+        oldWidget.character.currentOutfitId !=
+            widget.character.currentOutfitId ||
+        oldWidget.character.expressionImageUrls !=
+            widget.character.expressionImageUrls) {
+      _currentExpressionImageUrl = null;
+      _currentExpression = 'neutral';
     }
     // 포함된 자료가 모두 사라지면 PDF 모드를 자동으로 해제한다.
     if (_pdfMode && !_hasMaterial) {
@@ -100,7 +114,9 @@ class _PlayScreenState extends State<PlayScreen> {
   @override
   Widget build(BuildContext context) {
     final imageUrl = widget.api.assetUrl(
-      widget.character.baseImageUrl ?? widget.character.visualNovelImageUrl,
+      _currentExpressionImageUrl ??
+          widget.character.baseImageUrl ??
+          widget.character.visualNovelImageUrl,
     );
     final lastAssistant = _loadingHistory
         ? '이전 대화를 불러오는 중...'
@@ -141,14 +157,29 @@ class _PlayScreenState extends State<PlayScreen> {
           ),
         ),
         Positioned(
-          left: MetaSpacing.base,
           right: MetaSpacing.base,
-          top: MetaSpacing.base,
-          child: _HudBar(
-            character: widget.character,
-            affinityStatus: widget.affinityStatus,
-            toggles: _buildToggles(),
+          top: MetaSpacing.xs,
+          child: _HudHandle(
+            collapsed: _hudCollapsed,
+            onPressed: () => setState(() => _hudCollapsed = !_hudCollapsed),
           ),
+        ),
+        if (!_hudCollapsed)
+          Positioned(
+            left: MetaSpacing.base,
+            right: MetaSpacing.base,
+            top: MetaSpacing.xl,
+            child: _HudBar(
+              character: widget.character,
+              affinityStatus: widget.affinityStatus,
+              toggles: _buildToggles(),
+              onCollapse: () => setState(() => _hudCollapsed = true),
+            ),
+          ),
+        Positioned(
+          left: MetaSpacing.base,
+          top: _hudCollapsed ? MetaSpacing.xs : 132,
+          child: _ExpressionBadge(expression: _currentExpression),
         ),
         Positioned(
           left: MetaSpacing.base,
@@ -229,7 +260,13 @@ class _PlayScreenState extends State<PlayScreen> {
     );
   }
 
-  void _showHistory() {
+  Future<void> _showHistory() async {
+    final historyScrollController = ScrollController();
+    await _loadHistory();
+    if (!mounted) {
+      historyScrollController.dispose();
+      return;
+    }
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: MetaColors.surface,
@@ -240,6 +277,13 @@ class _PlayScreenState extends State<PlayScreen> {
       ),
       builder: (sheetContext) {
         final textTheme = Theme.of(sheetContext).textTheme;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (historyScrollController.hasClients) {
+            historyScrollController.jumpTo(
+              historyScrollController.position.maxScrollExtent,
+            );
+          }
+        });
         return SafeArea(
           child: ConstrainedBox(
             constraints: BoxConstraints(
@@ -270,6 +314,7 @@ class _PlayScreenState extends State<PlayScreen> {
                               style: textTheme.bodyLarge),
                         )
                       : ListView.builder(
+                          controller: historyScrollController,
                           padding: const EdgeInsets.all(MetaSpacing.base),
                           itemCount: _messages.length,
                           itemBuilder: (_, index) => _HistoryRow(
@@ -283,7 +328,7 @@ class _PlayScreenState extends State<PlayScreen> {
           ),
         );
       },
-    );
+    ).whenComplete(historyScrollController.dispose);
   }
 
   Future<void> _send() async {
@@ -310,6 +355,12 @@ class _PlayScreenState extends State<PlayScreen> {
             : const [],
       );
       setState(() {
+        _currentExpression = response.expression;
+        _currentExpressionImageUrl = _safeExpressionImageUrl(
+              response.expressionImageUrl ??
+                  widget.character.expressionImageUrls[response.expression],
+            ) ??
+            widget.character.baseImageUrl;
         if (response.environmentBox.trim().isNotEmpty) {
           _messages.add(_ChatEntry(
             text: response.environmentBox,
@@ -320,6 +371,7 @@ class _PlayScreenState extends State<PlayScreen> {
           text: response.reply,
           role: _ChatRole.assistant,
         ));
+        _trimLocalHistory();
       });
     } catch (error) {
       setState(() => _error = error.toString());
@@ -328,6 +380,27 @@ class _PlayScreenState extends State<PlayScreen> {
         setState(() => _sending = false);
       }
     }
+  }
+
+  void _trimLocalHistory() {
+    if (_messages.length <= _maxChatHistoryMessages) {
+      return;
+    }
+    _messages = _messages.sublist(_messages.length - _maxChatHistoryMessages);
+  }
+
+  String? _safeExpressionImageUrl(String? imageUrl) {
+    if (imageUrl == null || imageUrl.trim().isEmpty) {
+      return null;
+    }
+    final baseImageUrl = widget.character.baseImageUrl;
+    if (imageUrl == baseImageUrl) {
+      return imageUrl;
+    }
+    if (!imageUrl.contains('/expression_')) {
+      return baseImageUrl;
+    }
+    return imageUrl;
   }
 
   String? _latestText(_ChatRole role) {
@@ -364,6 +437,44 @@ class _ChatEntry {
   final _ChatRole role;
 }
 
+class _ExpressionBadge extends StatelessWidget {
+  const _ExpressionBadge({required this.expression});
+
+  final String expression;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(MetaRadii.full),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: MetaColors.inkDeep.withValues(alpha: 0.54),
+            border: Border.all(
+              color: MetaColors.surface.withValues(alpha: 0.28),
+            ),
+            borderRadius: BorderRadius.circular(MetaRadii.full),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: MetaSpacing.md,
+              vertical: MetaSpacing.xs,
+            ),
+            child: Text(
+              '감정: $expression',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: MetaColors.canvas,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 enum _ChatRole {
   user,
   assistant,
@@ -383,11 +494,13 @@ class _HudBar extends StatelessWidget {
     required this.character,
     required this.affinityStatus,
     required this.toggles,
+    required this.onCollapse,
   });
 
   final CharacterDto character;
   final AffinityStatusDto? affinityStatus;
   final Widget toggles;
+  final VoidCallback onCollapse;
 
   @override
   Widget build(BuildContext context) {
@@ -453,8 +566,52 @@ class _HudBar extends StatelessWidget {
                 ),
                 const SizedBox(width: MetaSpacing.md),
                 toggles,
+                const SizedBox(width: MetaSpacing.xs),
+                IconButton(
+                  tooltip: '상단 정보 숨기기',
+                  onPressed: onCollapse,
+                  icon: const Icon(Icons.keyboard_arrow_up),
+                  color: MetaColors.canvas,
+                ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HudHandle extends StatelessWidget {
+  const _HudHandle({
+    required this.collapsed,
+    required this.onPressed,
+  });
+
+  final bool collapsed;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(MetaRadii.full),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: MetaColors.inkDeep.withValues(alpha: 0.5),
+            border: Border.all(
+              color: MetaColors.surface.withValues(alpha: 0.28),
+            ),
+            borderRadius: BorderRadius.circular(MetaRadii.full),
+          ),
+          child: IconButton(
+            tooltip: collapsed ? '상단 정보 보이기' : '상단 정보 숨기기',
+            onPressed: onPressed,
+            icon: Icon(
+              collapsed ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+            ),
+            color: MetaColors.canvas,
           ),
         ),
       ),
@@ -572,6 +729,8 @@ class _HistoryRow extends StatelessWidget {
           style: textTheme.bodyMedium?.copyWith(
             color: MetaColors.steel,
             fontStyle: FontStyle.italic,
+            fontSize: 13,
+            height: 1.45,
           ),
         ),
       );
@@ -588,10 +747,19 @@ class _HistoryRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: textTheme.labelLarge?.copyWith(color: labelColor),
+            style: textTheme.labelLarge?.copyWith(
+              color: labelColor,
+              fontSize: 11,
+            ),
           ),
           const SizedBox(height: 2),
-          Text(entry.text, style: textTheme.bodyLarge),
+          Text(
+            entry.text,
+            style: textTheme.bodyLarge?.copyWith(
+              fontSize: 14,
+              height: 1.45,
+            ),
+          ),
         ],
       ),
     );
@@ -714,7 +882,8 @@ class _DialoguePanel extends StatelessWidget {
                       reply,
                       style: textTheme.bodyLarge?.copyWith(
                         color: MetaColors.inkDeep,
-                        height: 1.55,
+                        fontSize: 14,
+                        height: 1.45,
                       ),
                     ),
                   ),

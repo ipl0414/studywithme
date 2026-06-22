@@ -13,6 +13,7 @@ class ApiClient {
             );
 
   final String baseUrl;
+  String? _authToken;
 
   String assetUrl(String? path) {
     if (path == null || path.isEmpty) {
@@ -34,8 +35,28 @@ class ApiClient {
     });
   }
 
+  Future<AuthDto> loginWithTestAccount(String userId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/test'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'user_id': userId}),
+    );
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final detail = decoded is Map<String, dynamic> ? decoded['detail'] : null;
+      throw ApiException(
+          response.statusCode, detail?.toString() ?? response.body);
+    }
+    final auth = AuthDto.fromJson(decoded as Map<String, dynamic>);
+    _authToken = auth.accessToken;
+    return auth;
+  }
+
   Future<CharacterDto?> getCurrentCharacter() async {
-    final response = await http.get(Uri.parse('$baseUrl/characters/current'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/characters/current'),
+      headers: await _headers(),
+    );
     if (response.statusCode == 404) {
       return null;
     }
@@ -49,7 +70,10 @@ class ApiClient {
   }
 
   Future<List<CharacterDto>> listCharacters() async {
-    final response = await http.get(Uri.parse('$baseUrl/characters'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/characters'),
+      headers: await _headers(),
+    );
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final detail = decoded is Map<String, dynamic> ? decoded['detail'] : null;
@@ -94,8 +118,9 @@ class ApiClient {
   }
 
   Future<void> deleteCharacter(String characterId) async {
-    final response =
-        await http.delete(Uri.parse('$baseUrl/characters/$characterId'));
+    final response = await http.delete(
+        Uri.parse('$baseUrl/characters/$characterId'),
+        headers: await _headers());
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final detail = decoded is Map<String, dynamic> ? decoded['detail'] : null;
@@ -127,7 +152,10 @@ class ApiClient {
   }
 
   Future<List<MaterialDto>> listMaterials() async {
-    final response = await http.get(Uri.parse('$baseUrl/materials'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/materials'),
+      headers: await _headers(),
+    );
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final detail = decoded is Map<String, dynamic> ? decoded['detail'] : null;
@@ -140,8 +168,9 @@ class ApiClient {
   }
 
   Future<void> deleteMaterial(String materialId) async {
-    final response =
-        await http.delete(Uri.parse('$baseUrl/materials/$materialId'));
+    final response = await http.delete(
+        Uri.parse('$baseUrl/materials/$materialId'),
+        headers: await _headers());
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final detail = decoded is Map<String, dynamic> ? decoded['detail'] : null;
@@ -158,6 +187,7 @@ class ApiClient {
       'POST',
       Uri.parse('$baseUrl/materials/upload'),
     );
+    request.headers.addAll(await _headers());
     request.files.add(
       http.MultipartFile.fromBytes(
         'file',
@@ -207,8 +237,9 @@ class ApiClient {
   Future<List<ChatHistoryMessageDto>> listChatMessages({
     required String characterId,
   }) async {
-    final response = await http
-        .get(Uri.parse('$baseUrl/chat/messages?character_id=$characterId'));
+    final response = await http.get(
+        Uri.parse('$baseUrl/chat/messages?character_id=$characterId'),
+        headers: await _headers());
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final detail = decoded is Map<String, dynamic> ? decoded['detail'] : null;
@@ -239,8 +270,9 @@ class ApiClient {
   Future<AffinityStatusDto> getAffinityStatus({
     required String characterId,
   }) async {
-    final response = await http
-        .get(Uri.parse('$baseUrl/affinity/status?character_id=$characterId'));
+    final response = await http.get(
+        Uri.parse('$baseUrl/affinity/status?character_id=$characterId'),
+        headers: await _headers());
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final detail = decoded is Map<String, dynamic> ? decoded['detail'] : null;
@@ -262,8 +294,9 @@ class ApiClient {
   Future<List<CostumeDto>> listCostumes({
     required String characterId,
   }) async {
-    final response = await http
-        .get(Uri.parse('$baseUrl/wardrobe/costumes?character_id=$characterId'));
+    final response = await http.get(
+        Uri.parse('$baseUrl/wardrobe/costumes?character_id=$characterId'),
+        headers: await _headers());
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final detail = decoded is Map<String, dynamic> ? decoded['detail'] : null;
@@ -292,7 +325,7 @@ class ApiClient {
   ) async {
     final response = await http.post(
       Uri.parse('$baseUrl$path'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(contentTypeJson: true),
       body: jsonEncode(payload),
     );
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -310,7 +343,7 @@ class ApiClient {
   ) async {
     final response = await http.patch(
       Uri.parse('$baseUrl$path'),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(contentTypeJson: true),
       body: jsonEncode(payload),
     );
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -320,6 +353,16 @@ class ApiClient {
           response.statusCode, detail?.toString() ?? response.body);
     }
     return decoded as Map<String, dynamic>;
+  }
+
+  Future<Map<String, String>> _headers({bool contentTypeJson = false}) async {
+    if (_authToken == null) {
+      throw const ApiException(401, '로그인이 필요합니다.');
+    }
+    return {
+      if (contentTypeJson) 'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_authToken',
+    };
   }
 }
 

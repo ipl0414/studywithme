@@ -1,5 +1,25 @@
 import '../text/generated_text.dart';
 
+class AuthDto {
+  const AuthDto({
+    required this.accessToken,
+    required this.tokenType,
+    required this.userId,
+  });
+
+  final String accessToken;
+  final String tokenType;
+  final String userId;
+
+  factory AuthDto.fromJson(Map<String, dynamic> json) {
+    return AuthDto(
+      accessToken: json['access_token'] as String,
+      tokenType: json['token_type'] as String? ?? 'bearer',
+      userId: json['user_id'] as String,
+    );
+  }
+}
+
 class CharacterDto {
   const CharacterDto({
     required this.id,
@@ -11,6 +31,7 @@ class CharacterDto {
     this.baseImageUrl,
     this.profileImageUrl,
     this.visualNovelImageUrl,
+    this.expressionImageUrls = const {},
     this.currentOutfitId,
   });
 
@@ -23,6 +44,7 @@ class CharacterDto {
   final String? baseImageUrl;
   final String? profileImageUrl;
   final String? visualNovelImageUrl;
+  final Map<String, String> expressionImageUrls;
   final String? currentOutfitId;
 
   factory CharacterDto.fromJson(Map<String, dynamic> json) {
@@ -36,6 +58,9 @@ class CharacterDto {
       baseImageUrl: json['base_image_url'] as String?,
       profileImageUrl: json['profile_image_url'] as String?,
       visualNovelImageUrl: json['visual_novel_image_url'] as String?,
+      expressionImageUrls: Map<String, String>.from(
+        (json['expression_image_urls'] as Map?) ?? const {},
+      ),
       currentOutfitId: json['current_outfit_id'] as String?,
     );
   }
@@ -268,12 +293,16 @@ class ChatMessageDto {
   const ChatMessageDto({
     required this.reply,
     required this.environmentBox,
+    required this.expression,
     required this.model,
     required this.sourceChunkIds,
+    this.expressionImageUrl,
   });
 
   final String reply;
   final String environmentBox;
+  final String expression;
+  final String? expressionImageUrl;
   final String model;
   final List<String> sourceChunkIds;
 
@@ -282,8 +311,11 @@ class ChatMessageDto {
       reply: cleanGeneratedText(json['reply']?.toString() ?? ''),
       environmentBox:
           cleanGeneratedText(json['environment_box']?.toString() ?? ''),
+      expression: json['expression']?.toString() ?? 'neutral',
+      expressionImageUrl: json['expression_image_url'] as String?,
       model: json['model'] as String,
-      sourceChunkIds: List<String>.from(json['source_chunk_ids'] as List),
+      sourceChunkIds:
+          List<String>.from((json['source_chunk_ids'] as List?) ?? const []),
     );
   }
 }

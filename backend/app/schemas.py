@@ -10,6 +10,10 @@ class ExternalLoginRequest(BaseModel):
     access_token: str = Field(..., min_length=1)
 
 
+class TestLoginRequest(BaseModel):
+    user_id: str = Field(default="test_user", min_length=1)
+
+
 class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -43,6 +47,7 @@ class CharacterResponse(BaseModel):
     base_image_url: Optional[str] = None
     profile_image_url: Optional[str] = None
     visual_novel_image_url: Optional[str] = None
+    expression_image_urls: Dict[str, str] = Field(default_factory=dict)
     current_outfit_id: Optional[str] = None
 
 
@@ -69,6 +74,8 @@ class ChatMessageRequest(BaseModel):
 class ChatMessageResponse(BaseModel):
     reply: str
     environment_box: str = ""
+    expression: str = "neutral"
+    expression_image_url: Optional[str] = None
     model: str
     system_prompt_preview: str
     source_chunk_ids: List[str] = []
@@ -139,6 +146,7 @@ class CostumeResponse(BaseModel):
     is_equipped: bool
     generation_status: str
     image_url: Optional[str] = None
+    expression_image_urls: Dict[str, str] = Field(default_factory=dict)
 
 
 class EquipCostumeRequest(BaseModel):

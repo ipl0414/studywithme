@@ -13,14 +13,18 @@ import '../wardrobe/wardrobe_screen.dart';
 enum _Panel { none, study, wardrobe, profiles }
 
 class StudyShell extends StatefulWidget {
-  const StudyShell({super.key});
+  const StudyShell({
+    required this.api,
+    super.key,
+  });
+
+  final ApiClient api;
 
   @override
   State<StudyShell> createState() => _StudyShellState();
 }
 
 class _StudyShellState extends State<StudyShell> {
-  final _api = ApiClient();
   _Panel _panel = _Panel.none;
   CharacterDto? _character;
   List<CharacterDto> _characters = const [];
@@ -42,19 +46,19 @@ class _StudyShellState extends State<StudyShell> {
     AffinityDto? checkin;
     try {
       final results = await Future.wait([
-        _api.getCurrentCharacter(),
-        _api.listCharacters(),
-        _api.listMaterials(),
+        widget.api.getCurrentCharacter(),
+        widget.api.listCharacters(),
+        widget.api.listMaterials(),
       ]);
       final character = results[0] as CharacterDto?;
       final characters = results[1] as List<CharacterDto>;
       final materials = results[2] as List<MaterialDto>;
       final costumes = character == null
           ? <CostumeDto>[]
-          : await _api.listCostumes(characterId: character.id);
+          : await widget.api.listCostumes(characterId: character.id);
       final affinityStatus = character == null
           ? null
-          : await _api.getAffinityStatus(characterId: character.id);
+          : await widget.api.getAffinityStatus(characterId: character.id);
       if (mounted) {
         setState(() {
           _character = character;
@@ -128,11 +132,11 @@ class _StudyShellState extends State<StudyShell> {
   Future<void> _refreshProfiles() async {
     setState(() => _loadingProfiles = true);
     try {
-      final characters = await _api.listCharacters();
-      final current = await _api.getCurrentCharacter();
+      final characters = await widget.api.listCharacters();
+      final current = await widget.api.getCurrentCharacter();
       final costumes = current == null
           ? <CostumeDto>[]
-          : await _api.listCostumes(characterId: current.id);
+          : await widget.api.listCostumes(characterId: current.id);
       if (mounted) {
         setState(() {
           _characters = characters;
@@ -148,9 +152,9 @@ class _StudyShellState extends State<StudyShell> {
   }
 
   Future<void> _selectCharacter(CharacterDto character) async {
-    final costumes = await _api.listCostumes(characterId: character.id);
+    final costumes = await widget.api.listCostumes(characterId: character.id);
     final affinityStatus =
-        await _api.getAffinityStatus(characterId: character.id);
+        await widget.api.getAffinityStatus(characterId: character.id);
     if (mounted) {
       setState(() {
         _character = character;
@@ -187,6 +191,7 @@ class _StudyShellState extends State<StudyShell> {
         baseImageUrl: current.baseImageUrl,
         profileImageUrl: current.profileImageUrl,
         visualNovelImageUrl: current.visualNovelImageUrl,
+        expressionImageUrls: current.expressionImageUrls,
         currentOutfitId: current.currentOutfitId,
       );
       _affinityStatus = AffinityStatusDto(
@@ -229,13 +234,14 @@ class _StudyShellState extends State<StudyShell> {
     final wasCurrent = _character?.id == characterId;
     final remaining =
         _characters.where((item) => item.id != characterId).toList();
-    final current = wasCurrent ? await _api.getCurrentCharacter() : _character;
+    final current =
+        wasCurrent ? await widget.api.getCurrentCharacter() : _character;
     final costumes = current == null
         ? <CostumeDto>[]
-        : await _api.listCostumes(characterId: current.id);
+        : await widget.api.listCostumes(characterId: current.id);
     final affinityStatus = current == null
         ? null
-        : await _api.getAffinityStatus(characterId: current.id);
+        : await widget.api.getAffinityStatus(characterId: current.id);
     if (!mounted) {
       return;
     }
@@ -253,7 +259,7 @@ class _StudyShellState extends State<StudyShell> {
     if (current == null) {
       return null;
     }
-    final affinity = await _api.claimCheckin(characterId: current.id);
+    final affinity = await widget.api.claimCheckin(characterId: current.id);
     _handleAffinityChanged(affinity);
     return affinity;
   }
@@ -263,7 +269,7 @@ class _StudyShellState extends State<StudyShell> {
     if (current == null) {
       return;
     }
-    final costumes = await _api.listCostumes(characterId: current.id);
+    final costumes = await widget.api.listCostumes(characterId: current.id);
     if (mounted && _character?.id == current.id) {
       setState(() => _costumes = costumes);
     }
@@ -329,7 +335,7 @@ class _StudyShellState extends State<StudyShell> {
 
     if (_character == null) {
       return OnboardingScreen(
-        api: _api,
+        api: widget.api,
         onCreated: _handleCharacterCreated,
       );
     }
@@ -342,7 +348,7 @@ class _StudyShellState extends State<StudyShell> {
         child: Stack(
           children: [
             PlayScreen(
-              api: _api,
+              api: widget.api,
               character: character,
               materials: _materials,
               selectedMaterialIds: _selectedMaterialIds,
@@ -375,7 +381,7 @@ class _StudyShellState extends State<StudyShell> {
       case _Panel.study:
         final session = _quizSessions[character.id];
         final study = StudyScreen(
-          api: _api,
+          api: widget.api,
           character: character,
           materials: _materials,
           selectedMaterialIds: _selectedMaterialIds,
@@ -399,10 +405,11 @@ class _StudyShellState extends State<StudyShell> {
           title: '의상',
           onClose: close,
           child: WardrobeScreen(
-            api: _api,
+            api: widget.api,
             character: character,
             costumes: _costumes,
             onCharacterChanged: _handleCharacterChanged,
+            onEquipped: close,
             onRefresh: _refreshCostumes,
           ),
         );
@@ -411,7 +418,7 @@ class _StudyShellState extends State<StudyShell> {
           title: '프로필',
           onClose: close,
           child: ProfilesScreen(
-            api: _api,
+            api: widget.api,
             characters: _characters,
             currentCharacter: character,
             loading: _loadingProfiles,
